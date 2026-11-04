@@ -72,3 +72,10 @@ def test_diagnostics_merge_and_tail():
         "failures": [{"dist": d, "error": err} for d in ("normal", "heavy", "small")]}]}
     out = format_diagnostics(res)
     assert out.count("FAIL") == 1 and "normal,heavy,small" in out and "REAL_MESSAGE" in out
+
+
+def test_agent_survives_api_error(tmp_path):
+    def boom(model, msgs):
+        raise RuntimeError("402")
+    s = run_agent("tinygemm", "m", tmp_path, rounds=2, chat_fn=boom, iters=2)
+    assert s["best"] is None and "402" in s["history"][0]["error"]

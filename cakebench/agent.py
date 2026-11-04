@@ -22,7 +22,7 @@ SYSTEM = ("You write fast GPU kernels in Python (PyTorch, Triton, or CUDA via to
           "shape, including tiny ones.")
 
 
-def chat(model, messages, api_key=None, timeout=300, max_tokens=8000):
+def chat(model, messages, api_key=None, timeout=300, max_tokens=6000):
     key = api_key or os.environ.get("OPENROUTER_API_KEY")
     if not key:
         raise RuntimeError("OPENROUTER_API_KEY not set")
@@ -48,7 +48,11 @@ def run_agent(task_name, model, out_dir, rounds=5, token_budget=200_000, chat_fn
                                         f"Inputs: {task.input_names}. Shapes: {json.dumps(task.shapes)}"}]
     best, used, hist = None, 0, []
     for i in range(rounds):
-        text, toks = chat_fn(model, msgs)
+        try:
+            text, toks = chat_fn(model, msgs)
+        except Exception as e:  # API/credit errors: keep partial results instead of crashing
+            hist.append({"round": i, "error": f"{type(e).__name__}: {e}"})
+            break
         used += toks
         code = extract_code(text)
         if code is None:
