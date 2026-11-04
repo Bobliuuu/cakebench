@@ -16,7 +16,10 @@ SYSTEM = ("You write fast GPU kernels in Python (PyTorch, Triton, or CUDA via to
           "Reply with ONE ```python code block defining `kernel(**inputs)` exactly per the spec. "
           "Correctness is checked against an fp32 oracle across shapes and input distributions "
           "(normal, heavy-tailed outliers, tiny magnitude); speed is median GPU span with L2 flushed, "
-          "scored as geomean speedup over a torch baseline.")
+          "scored as geomean speedup over a torch baseline. Inputs are bf16/fp16: do all arithmetic and "
+          "accumulation in fp32 (cast after loading); bf16 intermediates fail the accuracy check. "
+          "Keep Triton simple (tl.dot for matmul shapes, fp32 accumulators) and make it compile for every "
+          "shape, including tiny ones.")
 
 
 def chat(model, messages, api_key=None, timeout=300, max_tokens=8000):

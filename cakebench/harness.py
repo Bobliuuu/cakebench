@@ -82,19 +82,33 @@ def evaluate_file(task_name, path, **kw):
     return evaluate(task_name, fn, **kw)
 
 
+def _short(f):
+    """Failure -> compact text. For errors keep head AND tail (the real message is at the end)."""
+    d = {k: v for k, v in f.items() if k not in ("dist", "trace")}
+    e = d.get("error")
+    if isinstance(e, str) and len(e) > 900:
+        d["error"] = e[:300] + " ... " + e[-600:]
+    return json.dumps(d)
+
+
 def format_diagnostics(res, limit=6):
-    """Compact localized feedback for the agent."""
+    """Compact localized feedback for the agent. Identical failures across distributions are merged."""
     if res.get("load_error"):
-        return "LOAD ERROR:\n" + res["load_error"]
+        return "LOAD ERROR:\n" + res["load_error"][-1500:]
     lines = [f"correct {res['n_correct']}/{res['n_shapes']} shapes; geomean speedup vs baseline: {res['geomean_speedup']}"]
     n = 0
     for r in res["rows"]:
         if r["correct"]:
             lines.append(f"  OK   {r['shape']}: {r['cand_ms']:.4f} ms (baseline {r['base_ms']:.4f}) x{r['speedup']:.2f}")
-        else:
-            for f in r["failures"]:
-                if n < limit:
-                    lines.append(f"  FAIL {r['shape']} {r['params']} dist={f.get('dist')}: " +
-                                 json.dumps({k: v for k, v in f.items() if k != 'dist'})[:600])
-                    n += 1
+            continue
+        merged = {}
+        for f in r["failures"]:
+            merged.setdefault(_short(f) if "error" in f else None, []).append(f)
+        for key, fs in merged.items():
+            if n >= limit:
+                break
+            dists = ",".join(f.get("dist", "?") for f in fs)
+            body = key if key else "; ".join(f"{f['dist']}: " + _short(f) for f in fs)
+            lines.append(f"  FAIL {r['shape']} {r['params']} dist={dists}: {body}")
+            n += 1
     return "\n".join(lines)

@@ -62,3 +62,13 @@ def test_cli(capsys):
     assert main(["list"]) == 0
     assert main(["suite", "--device", "cpu", "--iters", "2"]) == 0
     assert "SUITE geomean" in capsys.readouterr().out
+
+
+def test_diagnostics_merge_and_tail():
+    from cakebench.harness import format_diagnostics
+    err = "X" * 2000 + "REAL_MESSAGE"
+    res = {"n_correct": 0, "n_shapes": 1, "geomean_speedup": None, "rows": [{
+        "shape": "s", "params": {}, "correct": False,
+        "failures": [{"dist": d, "error": err} for d in ("normal", "heavy", "small")]}]}
+    out = format_diagnostics(res)
+    assert out.count("FAIL") == 1 and "normal,heavy,small" in out and "REAL_MESSAGE" in out
