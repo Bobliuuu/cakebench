@@ -1,0 +1,12 @@
+[project]
+name = "cakebench"
+version = "0.1.0"
+description = "Kernel benchmark inspired by CAKE (arXiv 2608.12629)"
+requires-python = ">=3.10"
+dependencies = ["torch"]
+[project.optional-dependencies]
+test = ["pytest"]
+[project.scripts]
+cakebench = "cakebench.cli:main"
+[tool.setuptools]
+packages = ["cakebench"]
