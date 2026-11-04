@@ -63,8 +63,11 @@ def _km_check(out, inp, p):
         return False, {"error": "index out of range"}
     chosen = d.gather(-1, idx[..., None])[..., 0]
     best = d.min(-1).values
-    gap = ((chosen - best) / (best.abs() + 1.0)).max().item()  # tie/bf16 tolerant
-    return gap < 2e-2, {"max_rel_dist_gap": gap, "exact_frac": (idx == d.argmin(-1)).float().mean().item()}
+    # bf16 matmul error scales with ||x||^2+||c||^2 (not with the distance), so normalise by that
+    xx = (inp["x"].float() ** 2).sum(-1)
+    cc = (inp["c"].float() ** 2).sum(-1).gather(-1, idx)
+    gap = ((chosen - best) / (xx + cc + 1e-6)).max().item()
+    return gap < 1e-2, {"max_rel_dist_gap": gap, "exact_frac": (idx == d.argmin(-1)).float().mean().item()}
 
 
 def _km_base(x, c):
@@ -97,7 +100,9 @@ def _knn_check(out, inp, p):
         return False, {"error": "index out of range"}
     kth = d.topk(k, dim=-1, largest=False).values[:, -1:]
     dd = d.gather(-1, idx)
-    hit = (dd <= kth + 1e-3 * (kth.abs() + 1)).float()
+    qq = (inp["q"].float() ** 2).sum(-1, keepdim=True)
+    scale = qq + (inp["db"].float() ** 2).sum(-1)[idx]  # fp16 matmul error scales with the norms
+    hit = (dd <= kth + 5e-3 * scale).float()
     srt = idx.sort(-1).values
     uniq = bool((srt[:, 1:] != srt[:, :-1]).all().item()) if k > 1 else True
     recall = hit.mean().item()
