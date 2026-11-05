@@ -28,7 +28,21 @@ cakebench agent tinygemm --model anthropic/claude-sonnet-4.5 --rounds 6 --device
 pytest
 ```
 
+## Status (A100-SXM4-40GB, shared box, `flock ~/.gpu.lock`)
+| example kernel (hand-written torch) | correct | geomean vs torch baseline |
+|---|---|---|
+| kmeans_assign | 3/3 | 1.69x |
+| knn_search | 3/3 | 1.13x |
+| tinygemm | 8/8 | 1.00x |
+| kda_decode | 4/4 | 1.03x |
+| kda_prefill | 3/3 | 1.06x |
+
+LLM agent via OpenRouter: Haiku 4.5 produced a correct, 1.16x `tinygemm` kernel on CPU in 3 rounds.
+On GPU `kmeans_assign` (Sonnet 4.5, Haiku 4.5) no model produced a correct Triton kernel yet: failures were Triton
+compile errors and one bf16-accumulation accuracy failure. Diagnostics now carry the exception cause chain, merged
+failures and error tails; the last runs were cut off by account credit (HTTP 402) before the fixed feedback could be exercised.
+
 ## Caveats
 - Cake IR / compiler is not public, so this benches *kernels*, not the compiler. Baselines are torch, not the paper's FlashML/FlashKDA/FlashInfer.
-- Paper numbers are B200; full portfolios need a large GPU. Only CPU path has been run here (tests pass); CUDA/CUPTI paths are untested.
-- Agent loop tested with a mock chat function; no live OpenRouter call made.
+- Paper numbers are B200; only an A100 (shared, so timings are noisy) was used. CUPTI path untested.
+- No LLM-written GPU kernel has passed yet; the example speedups are from hand-written torch.
