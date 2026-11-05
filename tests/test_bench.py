@@ -79,3 +79,13 @@ def test_agent_survives_api_error(tmp_path):
         raise RuntimeError("402")
     s = run_agent("tinygemm", "m", tmp_path, rounds=2, chat_fn=boom, iters=2)
     assert s["best"] is None and "402" in s["history"][0]["error"]
+
+
+def test_error_includes_cause_chain():
+    def f(x, w):
+        try:
+            raise ValueError("ROOT CAUSE")
+        except ValueError as e:
+            raise RuntimeError("wrapper") from e
+    r = evaluate("tinygemm", f, iters=2)
+    assert "ROOT CAUSE" in r["rows"][0]["failures"][0]["error"]

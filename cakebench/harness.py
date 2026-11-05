@@ -27,6 +27,16 @@ def _call(fn, inputs):
     return fn(**inputs)
 
 
+def _describe(e):
+    """Exception text incl. the cause chain (e.g. Triton CompilationError hides the reason in __cause__)."""
+    parts, seen = [], set()
+    while e is not None and id(e) not in seen:
+        seen.add(id(e))
+        parts.append(f"{type(e).__name__}: {e}")
+        e = e.__cause__ or e.__context__
+    return " <- caused by: ".join(parts)
+
+
 def _clone(inputs):
     return {k: (v.clone() if torch.is_tensor(v) else v) for k, v in inputs.items()}
 
@@ -52,7 +62,7 @@ def evaluate(task_name, fn, device="cpu", small=None, dists=DISTS, iters=20, cup
                     torch.cuda.synchronize()
                 ok, m = task.check(out, inputs, p)
             except Exception as e:  # compile/runtime errors go back to the agent
-                ok, m = False, {"error": f"{type(e).__name__}: {e}", "trace": traceback.format_exc()[-800:]}
+                ok, m = False, {"error": _describe(e), "trace": traceback.format_exc()[-800:]}
             if not ok:
                 row["correct"] = False
                 row["failures"].append({"dist": dist, **m})
