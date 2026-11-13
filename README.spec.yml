@@ -1,0 +1,222 @@
+# python3 ~/video-readme-maker/vrm.py all README.spec.yml
+# Numbers: task counts from cakebench/tasks.py and the recorded A100 example scores in results/a100_example_status.json,
+# merged by tools/readme_data.py into results/derived/readme_data.json
+project:
+  name: cakebench
+  emoji: "🎂"
+  tagline: "A kernel benchmark modelled on CAKE (arXiv 2608.12629): correctness against an fp32 oracle first, then speedup over a torch baseline"
+  repo: Bobliuuu/cakebench
+hero:
+  title: cakebench
+  subtitle: "score a GPU kernel, hand-written or LLM-generated, on five kernel families"
+  chips: [kmeans, kNN, tinygemm, KDA decode, KDA prefill]
+theme: {accent: "#27c8e8", accent2: "#ff6b6b", accent3: "#f2c14e", good: "#3ddc97"}
+readme_out: README.md
+assets_dir: assets
+badges:
+  - {label: python, message: "3.10+", color: 3776ab, logo: python}
+  - {label: tasks, message: "{{ n.tasks }} kernel families", color: 27c8e8}
+  - {label: shapes, message: "{{ n.shapes }} GPU shapes", color: a78bfa}
+  - {label: "example suite", message: "{{ n.suite }} geomean", color: 3ddc97}
+  - {label: paper, message: "CAKE arXiv 2608.12629", color: f2c14e}
+  - {label: release, message: v0.1.0, color: 3ddc97, link: "https://github.com/Bobliuuu/cakebench/releases/tag/v0.1.0"}
+  - {label: "🤗 dataset", message: Bobliu/cakebench, color: ff6b6b, link: "https://huggingface.co/datasets/Bobliu/cakebench"}
+nav:
+  - {emoji: "🎬", label: Video, anchor: video}
+  - {emoji: "📊", label: Results, anchor: results}
+  - {emoji: "🧩", label: How it works, anchor: how-it-works}
+  - {emoji: "🚀", label: Use, anchor: use}
+  - {emoji: "⚠️", label: Caveats, anchor: caveats}
+  - {emoji: "🗺️", label: Repo map, anchor: repo-map}
+
+numbers:
+  tasks: {file: results/derived/readme_data.json, path: n_tasks}
+  shapes: {file: results/derived/readme_data.json, path: total_shapes}
+  dists: {file: results/derived/readme_data.json, path: n_dists}
+  suite: {file: results/derived/readme_data.json, path: suite_geomean, fmt: "{:.2f}", unit: "x"}
+  km: {file: results/derived/readme_data.json, path: "rows.task=kmeans_assign.geomean_speedup", fmt: "{:.2f}", unit: "x"}
+  knn: {file: results/derived/readme_data.json, path: "rows.task=knn_search.geomean_speedup", fmt: "{:.2f}", unit: "x"}
+  gemm: {file: results/derived/readme_data.json, path: "rows.task=tinygemm.geomean_speedup", fmt: "{:.2f}", unit: "x"}
+  kdad: {file: results/derived/readme_data.json, path: "rows.task=kda_decode.geomean_speedup", fmt: "{:.2f}", unit: "x"}
+  kdap: {file: results/derived/readme_data.json, path: "rows.task=kda_prefill.geomean_speedup", fmt: "{:.2f}", unit: "x"}
+  km_shapes: {file: results/derived/readme_data.json, path: "rows.task=kmeans_assign.shapes_total"}
+  gemm_shapes: {file: results/derived/readme_data.json, path: "rows.task=tinygemm.shapes_total"}
+
+intro: |
+  <a id="video"></a>
+  cakebench scores a candidate kernel (hand-written or LLM-generated) on kernel families from the **CAKE: Compiler-Agent Co-Design for Frontier Kernel Evolution** paper.
+  A candidate must be **correct everywhere before it earns any score**; then its per-shape speedup over a torch baseline is aggregated with a geometric mean.
+  The repo also contains an agent loop that feeds localized failure diagnostics back to an LLM.
+
+video:
+  url: ""
+  caption: "Explainer video (voice-over and subtitles): what cakebench measures, how scoring works, and what has and has not been measured"
+  mp4: video/cakebench_explainer.mp4
+  gif: video/preview.gif
+  srt: video/cakebench_explainer.srt
+  poster: video/poster.png
+  out_dir: video/.render
+  fps: 24
+  max_mb: 22
+  render_crf: 18
+  concurrency: 4
+  music: true
+  voice: {engine: openai, voice: alloy, model: gpt-4o-mini-tts, tempo: 1.2}
+  scenes:
+    - type: title
+      title: cakebench
+      subtitle: Does your kernel run correctly, and how fast?
+      chips: [kernels, fp32 oracle, torch baseline]
+      say: "cakebench. A small benchmark that asks of any GPU kernel two questions, in order: is it correct, and how fast is it?"
+    - type: problem
+      heading: The problem
+      bullets:
+        - "LLMs can now write GPU kernels, but a fast wrong kernel is worthless"
+        - "Speedup claims need one baseline, one timing method, and a correctness gate"
+        - "Failures should say where they failed, so an agent can repair them"
+      say: "Language models can now write GPU kernels, but a fast wrong kernel is worthless. Speedup claims need a shared baseline, one timing method, and a correctness gate. And when a kernel fails, the failure should say where, so that an agent can repair it."
+    - type: architecture
+      diagram: flow
+      heading: "How a candidate is scored"
+      say: "A candidate is a Python file that defines a kernel function. It is checked against an fp32 oracle on every shape, under {{ n.dists.numtext }} input distributions: normal, heavy tailed, and tiny. Then it is timed, using the median GPU span with the L two cache flushed before each sample. The score is the per shape speedup over a torch baseline, combined with a geometric mean. Incorrect anywhere means no score."
+    - type: cards
+      heading: "Five kernel families"
+      cards:
+        - {title: kmeans_assign, sub: "Flash-KMeans assign", lines: ["{{ n.km_shapes }} shapes"]}
+        - {title: knn_search, sub: "KNN dispatcher portfolio", lines: ["recall must be about 1.0"]}
+        - {title: tinygemm, sub: "small-M BF16 GEMM", lines: ["{{ n.gemm_shapes }} decode shapes"]}
+        - {title: "kda_decode / kda_prefill", sub: "Kimi Delta Attention", lines: ["decode, and prefill from cached state"]}
+      footer: "{{ n.tasks }} tasks, {{ n.shapes }} shapes in the full GPU portfolio"
+      say: "There are {{ n.tasks.numtext }} kernel families, with {{ n.shapes.numtext }} shapes in the full GPU portfolio. K means assignment, nearest neighbour search with a recall requirement, small M BF16 matrix multiply on {{ n.gemm_shapes.numtext }} decode style shapes, and the Kimi Delta Attention decode and prefill kernels."
+    - type: chart
+      chart: speedups
+      say: "To show the harness works end to end, the repo ships hand written example kernels in plain torch. On one shared A100 they are all correct on every shape. K means assign reaches {{ n.km.numtext }} times over the baseline, nearest neighbour {{ n.knn.numtext }}, tiny GEMM {{ n.gemm.numtext }}, and the two Kimi Delta Attention kernels {{ n.kdad.numtext }} and {{ n.kdap.numtext }}."
+    - type: stat
+      number: suite
+      kicker: "suite geomean over the five example kernels"
+      label: "vs torch baseline"
+      sub: "hand-written torch examples, one shared A100; shows the harness, not new kernels"
+      say: "Across the five example kernels the suite geometric mean is {{ n.suite.numtext }} times. These are example kernels written in torch to exercise the harness. They are not a claim about any model's ability to write kernels."
+    - type: caveats
+      heading: "What is and is not measured"
+      bullets:
+        - "The Cake IR and compiler are not public: this benches kernels, not the compiler"
+        - "Baselines are torch, not the paper's FlashML, FlashKDA or FlashInfer"
+        - "Paper numbers are B200; ours are a shared A100, so timings are noisy"
+        - "No LLM-written GPU kernel results are reported here"
+      say: "What is and is not measured. The Cake compiler is not public, so this benchmarks kernels, not the compiler. The baselines are torch, not the paper's tuned libraries. The paper used B200 GPUs; here a shared A100 was used, so timings are noisy. And no results for LLM written GPU kernels are reported here."
+    - type: end
+      title: cakebench
+      subtitle: "pip install -e .[test] && cakebench list"
+      say: "To try it, install the package and run cakebench list."
+
+tables:
+  - id: status_tbl
+    title: "Example kernels (hand-written torch) on one shared A100-SXM4-40GB, full shape portfolio"
+    file: results/derived/readme_data.json
+    rows_path: rows
+    highlight: kmeans_assign
+    columns:
+      - {key: task, title: Task}
+      - {key: desc, title: Paper analogue}
+      - {key: correct, title: Correct shapes, align: right}
+      - {key: geomean_speedup, title: "Geomean vs torch baseline", align: right, fmt: "{:.2f}", unit: "x"}
+
+charts:
+  - id: speedups
+    type: bar
+    title: "Geomean speedup of the example kernels over the torch baseline (A100)"
+    subtitle: "all shapes correct; hand-written torch; shared box, noisy timings"
+    better: higher
+    file: results/derived/readme_data.json
+    rows_path: rows
+    label: task
+    y: geomean_speedup
+    fmt: "{:.2f}"
+    unit: "x"
+    highlight: kmeans_assign
+
+diagrams:
+  - id: flow
+    title: "Scoring pipeline"
+    nodes:
+      - {id: c, label: "Candidate file", sub: "defines kernel(**inputs)", col: 0, row: 0, kind: io}
+      - {id: o, label: "fp32 oracle check", sub: "every shape x 3 distributions", col: 1, row: 0, kind: accent}
+      - {id: t, label: "Timing", sub: "median GPU span, L2 flushed (CUDA events; --cupti optional)", col: 2, row: 0}
+      - {id: s, label: "Score", sub: "per-shape speedup vs torch, geometric mean", col: 2, row: 1, kind: store}
+      - {id: d, label: "Diagnostics", sub: "shape, distribution, metric of each failure", col: 1, row: 1}
+      - {id: a, label: "LLM agent loop", sub: "feeds diagnostics back (cakebench agent)", col: 0, row: 1, kind: io}
+    edges:
+      - {from: c, to: o}
+      - {from: o, to: t, label: "all correct"}
+      - {from: t, to: s}
+      - {from: o, to: d, label: "any failure"}
+      - {from: d, to: a}
+
+sections:
+  - title: Results
+    emoji: "📊"
+    id: results
+    body: "The harness is exercised with the five hand-written example kernels in `examples/`. Recorded A100 scores are in `results/a100_example_status.json`; task and shape counts come from the task registry (`tools/readme_data.py`)."
+    highlights:
+      - {label: "Kernel families", number: tasks}
+      - {label: "GPU shapes", number: shapes}
+      - {label: "kmeans_assign", number: km}
+      - {label: "Suite geomean", number: suite}
+    charts: [speedups]
+    images:
+      - {src: video/preview.gif, alt: "animated overview of the explainer video", width: "70%"}
+    tables: [status_tbl]
+    after: "<sub>{{ n.suite.text }} is the geometric mean over the five example kernels; the timing box was shared, so absolute numbers are noisy.</sub>"
+  - title: How it works
+    emoji: "🧩"
+    id: how-it-works
+    body: |
+      - **Candidate** = a file defining `kernel(**inputs)`, checked against an fp32 oracle over every shape x 3 input distributions (normal / heavy-tailed / tiny).
+      - **Timing**: median GPU span, L2 flushed before each sample (CUDA events; `--cupti` for a torch.profiler CUPTI span).
+      - **Score**: per-shape speedup over a torch baseline; geometric mean over the portfolio. Incorrect anywhere => no score.
+      - **Failures** return localized diagnostics (shape, distribution, metric) that the agent loop feeds back to the LLM.
+    diagrams: [flow]
+    details:
+      - summary: "Kernel families and their paper analogues"
+        body: |
+          | task | paper analogue |
+          |---|---|
+          | `kmeans_assign` | Flash-KMeans assign (B=32,N=65536,K=1024,D=128) |
+          | `knn_search` | KNN dispatcher portfolio (recall must be ~1.0) |
+          | `tinygemm` | small-M BF16 GEMM, 12 decode shapes |
+          | `kda_decode` | Kimi Delta Attention decode |
+          | `kda_prefill` | Kimi Delta Attention prefill from cached state |
+  - title: Use
+    emoji: "🚀"
+    id: use
+    body: |
+      ```bash
+      pip install -e .[test]
+      cakebench list
+      cakebench run kmeans_assign examples/kmeans_assign.py     # small shapes on CPU, full on GPU with --full
+      cakebench suite --device cuda --full                       # all examples/
+      export OPENROUTER_API_KEY=...                              # only for the agent loop
+      cakebench agent tinygemm --model anthropic/claude-sonnet-4.5 --rounds 6 --device cuda --full
+      pytest
+      ```
+  - title: Caveats
+    emoji: "⚠️"
+    id: caveats
+    body: |
+      - The Cake IR / compiler is not public, so this benches *kernels*, not the compiler. Baselines are torch, not the paper's FlashML / FlashKDA / FlashInfer.
+      - Paper numbers are B200; only a shared A100 was used here, so timings are noisy. The CUPTI path is untested.
+      - The example speedups come from hand-written torch kernels that exercise the harness; they are not results for LLM-written kernels, and none are reported here.
+  - title: Repo map
+    emoji: "🗺️"
+    id: repo-map
+    body: |
+      | Path | What |
+      |---|---|
+      | `cakebench/tasks.py` | task registry: shapes, inputs, fp32 oracle, check, baseline |
+      | `cakebench/harness.py`, `timing.py` | correctness gate and timing |
+      | `cakebench/agent.py` | LLM agent loop via OpenRouter |
+      | `examples/` | hand-written example kernels, one per task |
+      | `results/` | recorded A100 example scores and the derived README data |
+      | `tests/` | pytest suite |
+footer: "Generated with [video-readme-maker](https://github.com/Bobliuuu/video-readme-maker). Earlier README kept at docs/readme/previous_README.md."

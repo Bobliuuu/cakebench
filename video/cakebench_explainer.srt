@@ -1,0 +1,116 @@
+1
+00:00:00,400 --> 00:00:01,026
+cakebench.
+
+2
+00:00:01,026 --> 00:00:06,847
+A small benchmark that asks of any GPU kernel two questions, in order: is it correct, and how
+
+3
+00:00:06,847 --> 00:00:07,535
+fast is it?
+
+4
+00:00:08,540 --> 00:00:13,407
+Language models can now write GPU kernels, but a fast wrong kernel is worthless.
+
+5
+00:00:13,407 --> 00:00:18,335
+Speedup claims need a shared baseline, one timing method, and a correctness gate.
+
+6
+00:00:18,335 --> 00:00:23,568
+And when a kernel fails, the failure should say where, so that an agent can repair it.
+
+7
+00:00:24,570 --> 00:00:28,259
+A candidate is a Python file that defines a kernel function.
+
+8
+00:00:28,259 --> 00:00:34,101
+It is checked against an fp32 oracle on every shape, under 3 input distributions: normal, heavy
+
+9
+00:00:34,101 --> 00:00:35,146
+tailed, and tiny.
+
+10
+00:00:35,146 --> 00:00:40,804
+Then it is timed, using the median GPU span with the L two cache flushed before each sample.
+
+11
+00:00:40,804 --> 00:00:46,276
+The score is the per shape speedup over a torch baseline, combined with a geometric mean.
+
+12
+00:00:46,276 --> 00:00:48,367
+Incorrect anywhere means no score.
+
+13
+00:00:49,370 --> 00:00:53,624
+There are 5 kernel families, with 21 shapes in the full GPU portfolio.
+
+14
+00:00:53,624 --> 00:00:59,155
+K means assignment, nearest neighbour search with a recall requirement, small M BF16 matrix
+
+15
+00:00:59,155 --> 00:01:04,686
+multiply on 8 decode style shapes, and the Kimi Delta Attention decode and prefill kernels.
+
+16
+00:01:05,690 --> 00:01:12,482
+To show the harness works end to end, the repo ships hand written example kernels in plain
+
+17
+00:01:12,482 --> 00:01:12,934
+torch.
+
+18
+00:01:12,934 --> 00:01:17,085
+On one shared A100 they are all correct on every shape.
+
+19
+00:01:17,085 --> 00:01:23,952
+K means assign reaches 1.69 times over the baseline, nearest neighbour 1.13, tiny GEMM 1.00
+
+20
+00:01:23,952 --> 00:01:28,102
+and the two Kimi Delta Attention kernels 1.03 and 1.06.
+
+21
+00:01:29,100 --> 00:01:33,502
+Across the five example kernels the suite geometric mean is 1.16 times.
+
+22
+00:01:33,502 --> 00:01:37,656
+These are example kernels written in torch to exercise the harness.
+
+23
+00:01:37,656 --> 00:01:41,624
+They are not a claim about any model's ability to write kernels.
+
+24
+00:01:42,620 --> 00:01:44,237
+What is and is not measured.
+
+25
+00:01:44,237 --> 00:01:48,742
+The Cake compiler is not public, so this benchmarks kernels, not the compiler.
+
+26
+00:01:48,742 --> 00:01:52,034
+The baselines are torch, not the paper's tuned libraries.
+
+27
+00:01:52,034 --> 00:01:56,423
+The paper used B200 GPUs; here a shared A100 was used, so timings are noisy.
+
+28
+00:01:56,423 --> 00:01:59,946
+And no results for LLM written GPU kernels are reported here.
+
+29
+00:02:00,950 --> 00:02:04,668
+To try it, install the package and run cakebench list.
+

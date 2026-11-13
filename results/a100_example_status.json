@@ -1,0 +1,10 @@
+{
+  "provenance": "Hand-written example kernels in examples/ scored with `cakebench suite --device cuda --full` on one shared A100-SXM4-40GB, as recorded in this repo's README at commit 7631683. Timing is median GPU span with L2 flushed; shared box, so timings are noisy.",
+  "rows": [
+    {"task": "kmeans_assign", "shapes_correct": 3, "shapes_total": 3, "geomean_speedup": 1.69},
+    {"task": "knn_search",    "shapes_correct": 3, "shapes_total": 3, "geomean_speedup": 1.13},
+    {"task": "tinygemm",      "shapes_correct": 8, "shapes_total": 8, "geomean_speedup": 1.00},
+    {"task": "kda_decode",    "shapes_correct": 4, "shapes_total": 4, "geomean_speedup": 1.03},
+    {"task": "kda_prefill",   "shapes_correct": 3, "shapes_total": 3, "geomean_speedup": 1.06}
+  ]
+}

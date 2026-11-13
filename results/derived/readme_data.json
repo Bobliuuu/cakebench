@@ -1,0 +1,61 @@
+{
+ "rows": [
+  {
+   "task": "kmeans_assign",
+   "shapes_correct": 3,
+   "shapes_total": 3,
+   "geomean_speedup": 1.69,
+   "shapes_full": 3,
+   "shapes_small": 2,
+   "correct": "3/3",
+   "desc": "K-Means assignment: nearest centroid (L2) per point. Paper: Flash-KMeans assign, B200."
+  },
+  {
+   "task": "knn_search",
+   "shapes_correct": 3,
+   "shapes_total": 3,
+   "geomean_speedup": 1.13,
+   "shapes_full": 3,
+   "shapes_small": 2,
+   "correct": "3/3",
+   "desc": "Exact k-NN search; recall must be ~1.0 and indices unique. Paper: dispatcher portfolio."
+  },
+  {
+   "task": "tinygemm",
+   "shapes_correct": 8,
+   "shapes_total": 8,
+   "geomean_speedup": 1.0,
+   "shapes_full": 8,
+   "shapes_small": 2,
+   "correct": "8/8",
+   "desc": "Small-M GEMM  y = x @ w.T. Paper: TinyGEMM, 35 decode shapes."
+  },
+  {
+   "task": "kda_decode",
+   "shapes_correct": 4,
+   "shapes_total": 4,
+   "geomean_speedup": 1.03,
+   "shapes_full": 4,
+   "shapes_small": 2,
+   "correct": "4/4",
+   "desc": "Kimi Delta Attention single-step decode with per-channel decay (gated delta rule)."
+  },
+  {
+   "task": "kda_prefill",
+   "shapes_correct": 3,
+   "shapes_total": 3,
+   "geomean_speedup": 1.06,
+   "shapes_full": 3,
+   "shapes_small": 2,
+   "correct": "3/3",
+   "desc": "Kimi Delta Attention prefill over T tokens from cached state (sequential delta-rule oracle)."
+  }
+ ],
+ "n_tasks": 5,
+ "n_dists": 3,
+ "total_shapes": 21,
+ "max_speedup": 1.69,
+ "all_correct": true,
+ "suite_geomean": 1.1583015769672034,
+ "provenance": "Hand-written example kernels in examples/ scored with `cakebench suite --device cuda --full` on one shared A100-SXM4-40GB, as recorded in this repo's README at commit 7631683. Timing is median GPU span with L2 flushed; shared box, so timings are noisy."
+}
